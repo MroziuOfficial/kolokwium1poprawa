@@ -19,6 +19,7 @@ public class CarController : ControllerBase
     {
         if (!await _carRepository.DoesClientExist(id))
             return NotFound("The client with specified ID does not exist");
+        
         var client = await _carRepository.GetClient(id);
         return Ok(client);
     }

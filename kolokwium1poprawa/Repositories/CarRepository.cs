@@ -15,11 +15,14 @@ public class CarRepository : ICarRepository
     public async Task<bool> DoesCarExist(int id)
     {
         var query = "SELECT 1 FROM cars WHERE ID = @ID";
+        
         await using var connection = new SqlConnection(_configuration.GetConnectionString("Default"));
         await using var command = new SqlCommand();
+        
         command.Connection = connection;
         command.CommandText = query;
         command.Parameters.AddWithValue("@ID", id);
+        
         await connection.OpenAsync();
         var res = await command.ExecuteScalarAsync();
         return res != null;
@@ -28,11 +31,14 @@ public class CarRepository : ICarRepository
     public async Task<bool> DoesClientExist(int id)
     {
         var query = "SELECT 1 FROM clients WHERE ID = @ID";
+        
         await using var connection = new SqlConnection(_configuration.GetConnectionString("Default"));
         await using var command = new SqlCommand();
+        
         command.Connection = connection;
         command.CommandText = query;
         command.Parameters.AddWithValue("@ID", id);
+        
         await connection.OpenAsync();
         var res = await command.ExecuteScalarAsync();
         return res != null;
@@ -52,14 +58,17 @@ public class CarRepository : ICarRepository
                 WHERE c.ID = @ID";
 
         var clientDTO = new ClientDTO();
+        
         await using var connection = new SqlConnection(_configuration.GetConnectionString("Default"));
         await using var command = new SqlCommand();
+        
         command.Connection = connection;
         command.CommandText = query;
         command.Parameters.AddWithValue("@ID", id);
+        
         await connection.OpenAsync();
-
         var reader = await command.ExecuteReaderAsync();
+        
         while (await reader.ReadAsync())
         {
             if (clientDTO.Id == 0)
@@ -84,7 +93,6 @@ public class CarRepository : ICarRepository
                 clientDTO.Rentals.Add(rentalDTO);
             }
         }
-
         return clientDTO;
     }
 
@@ -95,20 +103,22 @@ public class CarRepository : ICarRepository
         
         await using var conn = new SqlConnection(_configuration.GetConnectionString("Default"));
         await using var carPriceCommand = new SqlCommand();
+        
         carPriceCommand.Connection = conn;
         carPriceCommand.CommandText = carPriceQuery;
         carPriceCommand.Parameters.AddWithValue("@CarID", newClient.CarId);
+        
         await conn.OpenAsync();
-
         var carPrice = (int)await carPriceCommand.ExecuteScalarAsync();
         var totalPrice = carPrice * totalDays;
-         
-         
+
         var query = @"INSERT INTO clients (FirstName, LastName, Address) 
                           VALUES(@FirstName, @LastName, @Address);
                           SELECT CAST(SCOPE_IDENTITY() as int);";
+        
         await using var connection = new SqlConnection(_configuration.GetConnectionString("Default"));
         await using var command = new SqlCommand();
+        
         command.Connection = connection;
         command.CommandText = query;
         command.Parameters.AddWithValue("@FirstName", newClient.Client.FirstName);
@@ -125,6 +135,7 @@ public class CarRepository : ICarRepository
 
             var rentalQuery =
                 "INSERT INTO car_rentals (ClientID, CarID, DateFrom, DateTo, TotalPrice) VALUES(@ClientID, @CarID, @DateFrom, @DateTo, @TotalPrice)";
+            
             using (var rentalCommand = new SqlCommand(rentalQuery, connection, transaction as SqlTransaction))
             {
                 rentalCommand.Parameters.AddWithValue("@ClientID", clientId);
