@@ -1,4 +1,5 @@
-﻿using kolokwium1poprawa.Repositories;
+﻿using kolokwium1poprawa.DTOs;
+using kolokwium1poprawa.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace kolokwium1poprawa.Controllers;
@@ -20,5 +21,14 @@ public class CarController : ControllerBase
             return NotFound("The client with specified ID does not exist");
         var client = await _carRepository.GetClient(id);
         return Ok(client);
+    }
+    
+    [HttpPost]
+    public async Task<IActionResult> AddClient([FromBody] NewRentalDTO newClient)
+    {
+        if (!await _carRepository.DoesCarExist(newClient.CarId))
+            return NotFound("The car does not exist");
+        await _carRepository.AddNewClient(newClient);
+        return Created("Successfully added: ", newClient);
     }
 }

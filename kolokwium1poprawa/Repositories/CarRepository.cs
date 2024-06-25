@@ -88,4 +88,58 @@ public class CarRepository : ICarRepository
         return clientDTO;
     }
 
+    public async Task AddNewClient(NewRentalDTO newClient)
+    {
+        var totalDays = (newClient.DateTo - newClient.DateFrom).Days;
+        var carPriceQuery = "SELECT PricePerDay FROM Cars WHERE ID = @CarID";
+        
+        await using var conn = new SqlConnection(_configuration.GetConnectionString("Default"));
+        await using var carPriceCommand = new SqlCommand();
+        carPriceCommand.Connection = conn;
+        carPriceCommand.CommandText = carPriceQuery;
+        carPriceCommand.Parameters.AddWithValue("@CarID", newClient.CarId);
+        await conn.OpenAsync();
+
+        var carPrice = (int)await carPriceCommand.ExecuteScalarAsync();
+        var totalPrice = carPrice * totalDays;
+         
+         
+        var query = @"INSERT INTO clients (FirstName, LastName, Address) 
+                          VALUES(@FirstName, @LastName, @Address);
+                          SELECT CAST(SCOPE_IDENTITY() as int);";
+        await using var connection = new SqlConnection(_configuration.GetConnectionString("Default"));
+        await using var command = new SqlCommand();
+        command.Connection = connection;
+        command.CommandText = query;
+        command.Parameters.AddWithValue("@FirstName", newClient.Client.FirstName);
+        command.Parameters.AddWithValue("@LastName", newClient.Client.LastName);
+        command.Parameters.AddWithValue("@Address", newClient.Client.Address);
+
+        await connection.OpenAsync();
+        var transaction = await connection.BeginTransactionAsync();
+        command.Transaction = transaction as SqlTransaction;
+
+        try
+        {
+            var clientId = (int)await command.ExecuteScalarAsync();
+
+            var rentalQuery =
+                "INSERT INTO car_rentals (ClientID, CarID, DateFrom, DateTo, TotalPrice) VALUES(@ClientID, @CarID, @DateFrom, @DateTo, @TotalPrice)";
+            using (var rentalCommand = new SqlCommand(rentalQuery, connection, transaction as SqlTransaction))
+            {
+                rentalCommand.Parameters.AddWithValue("@ClientID", clientId);
+                rentalCommand.Parameters.AddWithValue("@CarID", newClient.CarId);
+                rentalCommand.Parameters.AddWithValue("@DateFrom", newClient.DateFrom);
+                rentalCommand.Parameters.AddWithValue("@DateTo", newClient.DateTo);
+                rentalCommand.Parameters.AddWithValue("@TotalPrice", totalPrice);
+                await rentalCommand.ExecuteNonQueryAsync();
+            }
+            await transaction.CommitAsync();
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
 }
