@@ -26,8 +26,12 @@ public class CarController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> AddClient([FromBody] NewRentalDTO newClient)
     {
+        if (newClient.DateFrom > newClient.DateTo)
+            return BadRequest("DateFrom cannot be later than DateTo");
+        
         if (!await _carRepository.DoesCarExist(newClient.CarId))
             return NotFound("The car does not exist");
+        
         await _carRepository.AddNewClient(newClient);
         return Created("Successfully added: ", newClient);
     }
