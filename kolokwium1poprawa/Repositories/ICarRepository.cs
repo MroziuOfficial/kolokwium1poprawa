@@ -5,7 +5,7 @@ namespace kolokwium1poprawa.Repositories;
 public interface ICarRepository
 {
     Task<ClientDTO> GetClient(int id);
-
-
-    //Task AddNewAnimal(NewAnimalDTO newAnimal);
+    //Task AddNewClientWithRental(NewRentalDTO newClientRental);
+    Task<bool> DoesCarExist(int carId);
+    Task<bool> DoesClientExist(int carId);
 }
